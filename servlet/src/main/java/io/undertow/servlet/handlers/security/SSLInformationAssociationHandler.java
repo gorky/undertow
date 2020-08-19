@@ -18,12 +18,14 @@
 
 package io.undertow.servlet.handlers.security;
 
-import java.io.ByteArrayInputStream;
 import java.security.cert.X509Certificate;
+
+import javax.net.ssl.SSLPeerUnverifiedException;
 import javax.servlet.ServletRequest;
 
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
+import io.undertow.server.RenegotiationRequiredException;
 import io.undertow.server.SSLSessionInfo;
 import io.undertow.servlet.handlers.ServletRequestContext;
 
@@ -94,25 +96,30 @@ public class SSLInformationAssociationHandler implements HttpHandler {
      *         negotiate the SSL connection. <br>
      *         Will be null if the chain is missing or empty.
      */
-    private X509Certificate[] getCerts(SSLSessionInfo session) {
-        try {
-            javax.security.cert.X509Certificate[] javaxCerts = session.getPeerCertificateChain();
-            if (javaxCerts == null || javaxCerts.length == 0) {
-                return null;
-            }
-            X509Certificate[] javaCerts = new X509Certificate[javaxCerts.length];
-            java.security.cert.CertificateFactory cf = java.security.cert.CertificateFactory.getInstance("X.509");
-            for (int i = 0; i < javaxCerts.length; i++) {
-                byte[] bytes = javaxCerts[i].getEncoded();
-                ByteArrayInputStream stream = new ByteArrayInputStream(bytes);
-                javaCerts[i] = (X509Certificate) cf.generateCertificate(stream);
-            }
-
-            return javaCerts;
-        } catch (Exception e) {
-            return null;
-        }
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        }
+  private X509Certificate[] getCerts(SSLSessionInfo session) {
+    try {
+      return session.getPeerCertificateChain();
+    } catch (SSLPeerUnverifiedException | RenegotiationRequiredException e) {
+      return null;
+    }
+//        try {
+//            javax.security.cert.X509Certificate[] javaxCerts = session.getPeerCertificateChain();
+//            if (javaxCerts == null || javaxCerts.length == 0) {
+//                return null;
+//            }
+//            X509Certificate[] javaCerts = new X509Certificate[javaxCerts.length];
+//            java.security.cert.CertificateFactory cf = java.security.cert.CertificateFactory.getInstance("X.509");
+//            for (int i = 0; i < javaxCerts.length; i++) {
+//                byte[] bytes = javaxCerts[i].getEncoded();
+//                ByteArrayInputStream stream = new ByteArrayInputStream(bytes);
+//                javaCerts[i] = (X509Certificate) cf.generateCertificate(stream);
+//            }
+//
+//            return javaCerts;
+//        } catch (Exception e) {
+//            return null;
+//        }
+  }
 
     @Override
     public void handleRequest(HttpServerExchange exchange) throws Exception {

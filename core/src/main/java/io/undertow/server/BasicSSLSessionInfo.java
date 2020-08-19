@@ -18,19 +18,21 @@
 
 package io.undertow.server;
 
-import io.undertow.UndertowMessages;
-import io.undertow.util.FlexBase64;
-import org.xnio.SslClientAuthMode;
-
-import javax.net.ssl.SSLPeerUnverifiedException;
-import javax.net.ssl.SSLSession;
-import javax.security.cert.CertificateException;
-import javax.security.cert.X509Certificate;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.security.cert.CertificateException;
+import java.security.cert.X509Certificate;
 import java.util.Collection;
+
+import javax.net.ssl.SSLPeerUnverifiedException;
+import javax.net.ssl.SSLSession;
+
+import org.xnio.SslClientAuthMode;
+
+import io.undertow.UndertowMessages;
+import io.undertow.util.FlexBase64;
 
 /**
  * Basic SSL session information. This information is generally provided by a front end proxy.
@@ -66,7 +68,8 @@ public class BasicSSLSessionInfo implements SSLSessionInfo {
             int i=0;
             for(java.security.cert.Certificate cert : certCol) {
                 this.peerCertificate[i] = cert;
-                this.certificate[i++] = X509Certificate.getInstance(cert.getEncoded());
+//                this.certificate[i++] = X509Certificate.getInstance(cert.getEncoded());
+                this.certificate[i++] = (X509Certificate)cert;
             }
         } else {
             this.peerCertificate = null;

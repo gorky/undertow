@@ -18,26 +18,31 @@
 
 package io.undertow.server;
 
-import io.undertow.UndertowMessages;
-import io.undertow.UndertowOptions;
-import io.undertow.server.protocol.http.HttpServerConnection;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.security.cert.Certificate;
+import java.security.cert.CertificateException;
+import java.security.cert.CertificateFactory;
+import java.security.cert.X509Certificate;
+import java.util.concurrent.TimeUnit;
+
+import javax.net.ssl.SSLPeerUnverifiedException;
+import javax.net.ssl.SSLSession;
+import javax.security.cert.CertificateEncodingException;
 
 import org.xnio.ChannelListener;
 import org.xnio.IoUtils;
 import org.xnio.Options;
-import io.undertow.connector.PooledByteBuffer;
 import org.xnio.SslClientAuthMode;
 import org.xnio.channels.Channels;
 import org.xnio.channels.SslChannel;
 import org.xnio.channels.StreamSourceChannel;
 
-import javax.net.ssl.SSLPeerUnverifiedException;
-import javax.net.ssl.SSLSession;
-import javax.security.cert.X509Certificate;
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.security.cert.Certificate;
-import java.util.concurrent.TimeUnit;
+import io.undertow.UndertowMessages;
+import io.undertow.UndertowOptions;
+import io.undertow.connector.PooledByteBuffer;
+import io.undertow.server.protocol.http.HttpServerConnection;
 
 /**
  * SSL session information that is read directly from the SSL session of the
@@ -98,30 +103,42 @@ public class ConnectionSSLSessionInfo implements SSLSessionInfo {
     }
 
     @Override
-    public X509Certificate[] getPeerCertificateChain() throws SSLPeerUnverifiedException, RenegotiationRequiredException {
-        if(unverified != null) {
+    public X509Certificate[] getPeerCertificateChain()
+        throws SSLPeerUnverifiedException, RenegotiationRequiredException {
+        if (unverified != null) {
             throw unverified;
         }
-        if(renegotiationRequiredException != null) {
+        if (renegotiationRequiredException != null) {
             throw renegotiationRequiredException;
         }
         try {
-            return channel.getSslSession().getPeerCertificateChain();
-        } catch (SSLPeerUnverifiedException e) {
-            try {
-                SslClientAuthMode sslClientAuthMode = channel.getOption(Options.SSL_CLIENT_AUTH_MODE);
-                if (sslClientAuthMode == SslClientAuthMode.NOT_REQUESTED) {
-                    renegotiationRequiredException = RENEGOTIATION_REQUIRED_EXCEPTION;
-                    throw renegotiationRequiredException;
-                }
-            } catch (IOException e1) {
-                //ignore, will not actually happen
+            // Until XNIO gets updates to use JDK >1.1
+            final CertificateFactory cf = CertificateFactory.getInstance("X.509");
+            javax.security.cert.X509Certificate[] xnioSessionCerts =
+                channel.getSslSession().getPeerCertificateChain();
+            final X509Certificate[] certs = new X509Certificate[xnioSessionCerts.length];
+            for (int i = 0; i < xnioSessionCerts.length; i++) {
+              certs[i] = (X509Certificate) cf
+                  .generateCertificate(new ByteArrayInputStream(xnioSessionCerts[i].getEncoded()));
             }
+            return certs;
+        } catch (SSLPeerUnverifiedException e) {
+          try {
+              SslClientAuthMode sslClientAuthMode = channel.getOption(Options.SSL_CLIENT_AUTH_MODE);
+              if (sslClientAuthMode == SslClientAuthMode.NOT_REQUESTED) {
+                  renegotiationRequiredException = RENEGOTIATION_REQUIRED_EXCEPTION;
+                  throw renegotiationRequiredException;
+              }
+            } catch (IOException e1) {
+              // ignore, will not actually happen
+            }
+            unverified = PEER_UNVERIFIED_EXCEPTION;
+            throw unverified;
+        } catch (CertificateException | CertificateEncodingException e) {
             unverified = PEER_UNVERIFIED_EXCEPTION;
             throw unverified;
         }
     }
-
 
     @Override
     public void renegotiate(HttpServerExchange exchange, SslClientAuthMode sslClientAuthMode) throws IOException {
@@ -139,6 +156,8 @@ public class ConnectionSSLSessionInfo implements SSLSessionInfo {
         return channel.getSslSession();
     }
 
+    //Suppress incorrect resource leak warning.
+    @SuppressWarnings("resource")
     public void renegotiateBufferRequest(HttpServerExchange exchange, SslClientAuthMode newAuthMode) throws IOException {
         int maxSize = exchange.getConnection().getUndertowOptions().get(UndertowOptions.MAX_BUFFERED_REQUEST_SIZE, UndertowOptions.DEFAULT_MAX_BUFFERED_REQUEST_SIZE);
         if (maxSize <= 0) {
@@ -173,6 +192,8 @@ public class ConnectionSSLSessionInfo implements SSLSessionInfo {
                         overflow = true;
                         break;
                     } else {
+                        //Not a leak here as old buffer has been captured in array and will
+                        //be closed if/when needed.
                         pooled = exchange.getConnection().getByteBufferPool().allocate();
                         poolArray[usedBuffers++] = pooled;
                     }

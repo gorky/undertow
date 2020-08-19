@@ -47,7 +47,7 @@ public interface SSLSessionInfo {
      */
     java.security.cert.Certificate[] getPeerCertificates() throws javax.net.ssl.SSLPeerUnverifiedException, RenegotiationRequiredException;
 
-    javax.security.cert.X509Certificate[] getPeerCertificateChain() throws javax.net.ssl.SSLPeerUnverifiedException, RenegotiationRequiredException;
+    java.security.cert.X509Certificate[] getPeerCertificateChain() throws javax.net.ssl.SSLPeerUnverifiedException, RenegotiationRequiredException;
 
     /**
      * Renegotiate in a blocking manner. This will set the client aut

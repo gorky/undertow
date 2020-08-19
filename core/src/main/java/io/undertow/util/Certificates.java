@@ -18,9 +18,6 @@
 
 package io.undertow.util;
 
-import javax.security.cert.CertificateEncodingException;
-import javax.security.cert.X509Certificate;
-
 /**
  * Utility class for dealing with certificates
  *
@@ -31,7 +28,7 @@ public class Certificates {
 
     public static final java.lang.String END_CERT = "-----END CERTIFICATE-----";
 
-    public static String toPem(final X509Certificate certificate) throws CertificateEncodingException {
+    public static String toPem(final java.security.cert.X509Certificate certificate) throws java.security.cert.CertificateEncodingException {
         final StringBuilder builder = new StringBuilder();
         builder.append(BEGIN_CERT);
         builder.append('\n');
@@ -40,7 +37,18 @@ public class Certificates {
         builder.append(END_CERT);
         return builder.toString();
     }
-
+/*
+    @Deprecated
+    public static String toPem(final javax.security.cert.X509Certificate certificate) throws javax.security.cert.CertificateEncodingException {
+        final StringBuilder builder = new StringBuilder();
+        builder.append(BEGIN_CERT);
+        builder.append('\n');
+        builder.append(FlexBase64.encodeString(certificate.getEncoded(), true));
+        builder.append('\n');
+        builder.append(END_CERT);
+        return builder.toString();
+    }
+*/
     private Certificates() {
 
     }

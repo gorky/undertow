@@ -18,11 +18,17 @@
 
 package io.undertow.server.protocol.http2;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.security.cert.Certificate;
+import java.security.cert.CertificateException;
+import java.security.cert.CertificateFactory;
+import java.security.cert.X509Certificate;
+
 import javax.net.ssl.SSLPeerUnverifiedException;
 import javax.net.ssl.SSLSession;
-import javax.security.cert.X509Certificate;
+import javax.security.cert.CertificateEncodingException;
+
 import org.xnio.Options;
 import org.xnio.SslClientAuthMode;
 
@@ -71,9 +77,19 @@ class Http2SslSessionInfo implements SSLSessionInfo {
     }
 
     @Override
-    public X509Certificate[] getPeerCertificateChain() throws SSLPeerUnverifiedException, RenegotiationRequiredException {
+    public X509Certificate[] getPeerCertificateChain()
+        throws SSLPeerUnverifiedException, RenegotiationRequiredException {
         try {
-            return channel.getSslSession().getPeerCertificateChain();
+            // Until JDK gets internally consistent
+            final CertificateFactory cf = CertificateFactory.getInstance("X.509");
+            javax.security.cert.X509Certificate[] xnioSessionCerts =
+                channel.getSslSession().getPeerCertificateChain();
+            final X509Certificate[] certs = new X509Certificate[xnioSessionCerts.length];
+            for (int i = 0; i < xnioSessionCerts.length; i++) {
+              certs[i] = (X509Certificate) cf
+                  .generateCertificate(new ByteArrayInputStream(xnioSessionCerts[i].getEncoded()));
+            }
+            return certs;
         } catch (SSLPeerUnverifiedException e) {
             try {
                 SslClientAuthMode sslClientAuthMode = channel.getOption(Options.SSL_CLIENT_AUTH_MODE);
@@ -81,11 +97,14 @@ class Http2SslSessionInfo implements SSLSessionInfo {
                     throw new RenegotiationRequiredException();
                 }
             } catch (IOException e1) {
-                //ignore, will not actually happen
+              // ignore, will not actually happen
             }
             throw e;
+        } catch (CertificateException | CertificateEncodingException e) {
+          throw new RenegotiationRequiredException();
         }
     }
+
     @Override
     public void renegotiate(HttpServerExchange exchange, SslClientAuthMode sslClientAuthMode) throws IOException {
         throw UndertowMessages.MESSAGES.renegotiationNotSupported();
