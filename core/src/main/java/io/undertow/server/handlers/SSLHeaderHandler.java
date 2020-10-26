@@ -103,6 +103,10 @@ public class SSLHeaderHandler implements HttpHandler {
         next.handleRequest(exchange);
     }
 
+    @Override
+    public String toString() {
+        return "ssl-headers()";
+    }
 
 
     public static class Builder implements HandlerBuilder {
