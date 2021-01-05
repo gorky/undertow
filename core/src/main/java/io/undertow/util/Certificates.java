@@ -37,7 +37,7 @@ public class Certificates {
         builder.append(END_CERT);
         return builder.toString();
     }
-/*
+    
     @Deprecated
     public static String toPem(final javax.security.cert.X509Certificate certificate) throws javax.security.cert.CertificateEncodingException {
         final StringBuilder builder = new StringBuilder();
@@ -48,7 +48,7 @@ public class Certificates {
         builder.append(END_CERT);
         return builder.toString();
     }
-*/
+    
     private Certificates() {
 
     }
