@@ -68,7 +68,6 @@ public class BasicSSLSessionInfo implements SSLSessionInfo {
             int i=0;
             for(java.security.cert.Certificate cert : certCol) {
                 this.peerCertificate[i] = cert;
-//                this.certificate[i++] = X509Certificate.getInstance(cert.getEncoded());
                 this.certificate[i++] = (X509Certificate)cert;
             }
         } else {

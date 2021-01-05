@@ -102,23 +102,6 @@ public class SSLInformationAssociationHandler implements HttpHandler {
     } catch (SSLPeerUnverifiedException | RenegotiationRequiredException e) {
       return null;
     }
-//        try {
-//            javax.security.cert.X509Certificate[] javaxCerts = session.getPeerCertificateChain();
-//            if (javaxCerts == null || javaxCerts.length == 0) {
-//                return null;
-//            }
-//            X509Certificate[] javaCerts = new X509Certificate[javaxCerts.length];
-//            java.security.cert.CertificateFactory cf = java.security.cert.CertificateFactory.getInstance("X.509");
-//            for (int i = 0; i < javaxCerts.length; i++) {
-//                byte[] bytes = javaxCerts[i].getEncoded();
-//                ByteArrayInputStream stream = new ByteArrayInputStream(bytes);
-//                javaCerts[i] = (X509Certificate) cf.generateCertificate(stream);
-//            }
-//
-//            return javaCerts;
-//        } catch (Exception e) {
-//            return null;
-//        }
   }
 
     @Override
