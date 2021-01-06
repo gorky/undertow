@@ -24,11 +24,13 @@ import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.nio.channels.Channel;
 import java.nio.charset.StandardCharsets;
+import java.security.cert.Certificate;
 import java.security.cert.CertificateEncodingException;
-import java.security.cert.X509Certificate;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 import javax.net.ssl.SSLPeerUnverifiedException;
 
@@ -79,8 +81,6 @@ import io.undertow.util.SameThreadExecutor;
 import io.undertow.util.StatusCodes;
 import io.undertow.util.Transfer;
 import io.undertow.util.WorkerUtils;
-import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * An HTTP handler which proxies content to a remote server.
@@ -548,9 +548,9 @@ public final class ProxyHandler implements HttpHandler {
 
             SSLSessionInfo sslSessionInfo = exchange.getConnection().getSslSessionInfo();
             if (sslSessionInfo != null) {
-                X509Certificate[] peerCertificates;
+                Certificate[] peerCertificates;
                 try {
-                    peerCertificates = sslSessionInfo.getPeerCertificateChain();
+                    peerCertificates = sslSessionInfo.getPeerCertificates();
                     if (peerCertificates.length > 0) {
                         request.putAttachment(ProxiedRequestAttachments.SSL_CERT, Certificates.toPem(peerCertificates[0]));
                     }
@@ -559,6 +559,7 @@ public final class ProxyHandler implements HttpHandler {
                 }
                 request.putAttachment(ProxiedRequestAttachments.SSL_CYPHER, sslSessionInfo.getCipherSuite());
                 request.putAttachment(ProxiedRequestAttachments.SSL_SESSION_ID, sslSessionInfo.getSessionId());
+                request.putAttachment(ProxiedRequestAttachments.SSL_KEY_SIZE, sslSessionInfo.getKeySize());
             }
 
             if(rewriteHostHeader) {

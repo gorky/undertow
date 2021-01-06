@@ -24,31 +24,31 @@ package io.undertow.util;
  * @author Stuart Douglas
  */
 public class Certificates {
-    public static final java.lang.String BEGIN_CERT = "-----BEGIN CERTIFICATE-----";
+    public static final String BEGIN_CERT = "-----BEGIN CERTIFICATE-----";
 
-    public static final java.lang.String END_CERT = "-----END CERTIFICATE-----";
+    public static final String END_CERT = "-----END CERTIFICATE-----";
 
-    public static String toPem(final java.security.cert.X509Certificate certificate) throws java.security.cert.CertificateEncodingException {
-        final StringBuilder builder = new StringBuilder();
-        builder.append(BEGIN_CERT);
-        builder.append('\n');
-        builder.append(FlexBase64.encodeString(certificate.getEncoded(), true));
-        builder.append('\n');
-        builder.append(END_CERT);
-        return builder.toString();
-    }
-    
     @Deprecated
-    public static String toPem(final javax.security.cert.X509Certificate certificate) throws javax.security.cert.CertificateEncodingException {
+    public static String toPem(final javax.security.cert.X509Certificate certificate)
+            throws javax.security.cert.CertificateEncodingException {
+        return toPem(certificate.getEncoded());
+    }
+
+    public static String toPem(final java.security.cert.Certificate certificate)
+            throws java.security.cert.CertificateEncodingException {
+        return toPem(certificate.getEncoded());
+    }
+
+    private static String toPem(final byte[] encodedCertificate) {
         final StringBuilder builder = new StringBuilder();
         builder.append(BEGIN_CERT);
         builder.append('\n');
-        builder.append(FlexBase64.encodeString(certificate.getEncoded(), true));
+        builder.append(FlexBase64.encodeString(encodedCertificate, true));
         builder.append('\n');
         builder.append(END_CERT);
         return builder.toString();
     }
-    
+
     private Certificates() {
 
     }

@@ -31,12 +31,54 @@ import java.io.IOException;
 public interface SSLSessionInfo {
 
     /**
+     * Given the name of a TLS/SSL cipher suite, return an int representing it effective stream
+     * cipher key strength. i.e. How much entropy material is in the key material being fed into the
+     * encryption routines.
+     * <p>
+     * http://www.thesprawl.org/research/tls-and-ssl-cipher-suites/
+     * </p>
+     *
+     * @param cipherSuite String name of the TLS cipher suite.
+     * @return int indicating the effective key entropy bit-length.
+     */
+    static int calculateKeySize(String cipherSuite) {
+        // Roughly ordered from most common to least common.
+        if (cipherSuite == null) {
+            return 0;
+        } else if (cipherSuite.contains("WITH_AES_256_")) {
+            return 256;
+        } else if (cipherSuite.contains("WITH_RC4_128_")) {
+            return 128;
+        } else if (cipherSuite.contains("WITH_AES_128_")) {
+            return 128;
+        } else if (cipherSuite.contains("WITH_RC4_40_")) {
+            return 40;
+        } else if (cipherSuite.contains("WITH_3DES_EDE_CBC_")) {
+            return 168;
+        } else if (cipherSuite.contains("WITH_IDEA_CBC_")) {
+            return 128;
+        } else if (cipherSuite.contains("WITH_RC2_CBC_40_")) {
+            return 40;
+        } else if (cipherSuite.contains("WITH_DES40_CBC_")) {
+            return 40;
+        } else if (cipherSuite.contains("WITH_DES_CBC_")) {
+            return 56;
+        } else {
+            return 0;
+        }
+    }
+
+    /**
      *
      * @return The SSL session ID, or null if this could not be determined.
      */
     byte[] getSessionId();
 
     java.lang.String getCipherSuite();
+
+    default int getKeySize() {
+        return calculateKeySize(this.getCipherSuite());
+    }
 
     /**
      * Gets the peer certificates. This may force SSL renegotiation.
@@ -47,6 +89,13 @@ public interface SSLSessionInfo {
      */
     java.security.cert.Certificate[] getPeerCertificates() throws javax.net.ssl.SSLPeerUnverifiedException, RenegotiationRequiredException;
 
+    /**
+     * This method is no longer supported on java 15 and should be avoided.
+     * @deprecated in favor of {@link #getPeerCertificates()} because {@link SSLSession#getPeerCertificateChain()}
+     *             throws java 15.
+     * @see SSLSession#getPeerCertificateChain()
+     */
+    @Deprecated
     java.security.cert.X509Certificate[] getPeerCertificateChain() throws javax.net.ssl.SSLPeerUnverifiedException, RenegotiationRequiredException;
 
     /**
